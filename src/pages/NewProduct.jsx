@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import AdminLayout from '../components/admin/AdminLayout'
 import ToastStack from '../components/ui/ToastStack'
+import { DEFAULT_IMAGE_PLACEHOLDER, sanitizeImageUrl } from '../utils/sanitizeImageUrl'
 
 const DRAFT_STORAGE_KEY = 'newProductDraftV1'
 
@@ -204,7 +205,7 @@ function NewProduct() {
       tax: Number(form.tax),
       rating: 5,
       status: Number(form.stock) === 0 ? 'out_of_stock' : 'published',
-      image: form.image.trim(),
+      image: sanitizeImageUrl(form.image, DEFAULT_IMAGE_PLACEHOLDER),
       variants: {
         sizes: parseList(form.sizes),
         colors: parseList(form.colors),
@@ -421,7 +422,10 @@ function NewProduct() {
                 <article className="preview-card">
                   <p className="item-category">Vista previa</p>
                   <img
-                    src={form.image || 'https://placehold.co/600x400/eef2ff/1f2937?text=Imagen+producto'}
+                    src={sanitizeImageUrl(
+                      form.image,
+                      'https://placehold.co/600x400/eef2ff/1f2937?text=Imagen+producto',
+                    )}
                     alt="Vista previa del producto"
                     className="catalog-image"
                   />

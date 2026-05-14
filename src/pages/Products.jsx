@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom'
 import AdminLayout from '../components/admin/AdminLayout'
 import ToastStack from '../components/ui/ToastStack'
 import { mockProducts, statusLabel } from '../data/mockProducts'
+import { sanitizeImageUrl } from '../utils/sanitizeImageUrl'
 
 const STORAGE_KEY = 'catalogProductsV1'
 const PAGE_SIZE = 4
@@ -229,8 +230,10 @@ function Products() {
             rating: 4.5,
             status: parsedStatus,
             image:
-              data.image ||
-              'https://placehold.co/600x600/eef2ff/1f2937?text=Producto+importado',
+              sanitizeImageUrl(
+                data.image,
+                'https://placehold.co/600x600/eef2ff/1f2937?text=Producto+importado',
+              ),
             variants: {
               colors: [],
               sizes: [],
@@ -360,7 +363,12 @@ function Products() {
             <div className="catalog-grid">
               {paginatedProducts.map((product) => (
                 <article key={product.id} className="catalog-item">
-                  <img src={product.image} alt={product.name} className="catalog-image" loading="lazy" />
+                  <img
+                    src={sanitizeImageUrl(product.image)}
+                    alt={product.name}
+                    className="catalog-image"
+                    loading="lazy"
+                  />
                   <div>
                     <p className="item-category">{product.category}</p>
                     <h3>{product.name}</h3>
