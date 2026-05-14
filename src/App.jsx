@@ -3,6 +3,8 @@ import './App.css'
 import Footer from './components/Footer'
 import Header from './components/Header'
 import Home from './pages/Home'
+import NewProduct from './pages/NewProduct'
+import Products from './pages/Products'
 
 function App() {
   return (
@@ -11,16 +13,8 @@ function App() {
       <main className="site-main">
         <Routes>
           <Route path="/" element={<Home />} />
-          <Route
-            path="/productos"
-            element={
-              <section className="page-content">
-                <p className="eyebrow">Catálogo</p>
-                <h2>Productos</h2>
-                <p>Próximamente podrás explorar el catálogo completo.</p>
-              </section>
-            }
-          />
+          <Route path="/productos" element={<Products />} />
+          <Route path="/productos/nuevo" element={<NewProduct />} />
           <Route
             path="/carrito"
             element={
