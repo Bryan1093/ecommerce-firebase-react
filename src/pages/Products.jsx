@@ -2,23 +2,16 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import AdminLayout from '../components/admin/AdminLayout'
 import ToastStack from '../components/ui/ToastStack'
-import { mockProducts, statusLabel } from '../data/mockProducts'
+import { usePreferences } from '../context/PreferencesContext'
+import { mockProducts } from '../data/mockProducts'
 import { sanitizeImageUrl } from '../utils/sanitizeImageUrl'
 
 const STORAGE_KEY = 'catalogProductsV1'
 const PAGE_SIZE = 4
 
-const formatDate = (dateValue) =>
-  new Date(dateValue).toLocaleString('es-CO', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
-
 function Products() {
   const location = useLocation()
+  const { formatCurrency, formatDateTime, getCategoryLabel, getStatusLabel, statusOptions, t } = usePreferences()
 
   const [products, setProducts] = useState(() => {
     const incomingProduct = location.state?.newProduct
@@ -43,7 +36,7 @@ function Products() {
   const [page, setPage] = useState(1)
   const [toasts, setToasts] = useState(() =>
     location.state?.created
-      ? [{ id: 1, message: 'Producto publicado correctamente', type: 'success' }]
+      ? [{ id: 1, message: t('newProduct.publishedToast'), type: 'success' }]
       : [],
   )
   const nextIdRef = useRef(
@@ -68,15 +61,12 @@ function Products() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(products))
   }, [products])
 
-  const categories = useMemo(
-    () => ['all', ...new Set(products.map((product) => product.category))],
-    [products],
-  )
+  const categories = useMemo(() => ['all', ...new Set(products.map((product) => product.category))], [products])
 
   const filteredProducts = useMemo(() => {
     const normalizedSearch = search.trim().toLowerCase()
 
-    const result = products
+    return products
       .filter((product) => {
         const matchSearch =
           normalizedSearch.length === 0 ||
@@ -101,12 +91,9 @@ function Products() {
         }
         return new Date(b.updatedAt) - new Date(a.updatedAt)
       })
-
-    return result
   }, [products, search, statusFilter, categoryFilter, sortBy])
 
   const totalPages = Math.max(1, Math.ceil(filteredProducts.length / PAGE_SIZE))
-
   const currentPage = Math.min(page, totalPages)
 
   const paginatedProducts = useMemo(() => {
@@ -143,34 +130,34 @@ function Products() {
       status: 'draft',
       updatedBy: 'Bryan',
       updatedAt: new Date().toISOString(),
-      history: ['Producto duplicado por Bryan'],
+      history: [t('products.duplicatedHistory')],
     }
 
     setProducts((current) => [clonedProduct, ...current])
-    pushToast('Producto duplicado en borrador', 'success')
+    pushToast(t('products.duplicateToast'), 'success')
   }
 
   const pauseProduct = (productId) => {
-    applyMutation(productId, (product) => ({ ...product, status: 'draft' }), 'Producto pausado')
-    pushToast('Producto movido a borrador', 'info')
+    applyMutation(productId, (product) => ({ ...product, status: 'draft' }), t('products.pausedHistory'))
+    pushToast(t('products.pauseToast'), 'info')
   }
 
   const deleteProduct = (productId) => {
-    if (!window.confirm('¿Seguro que quieres eliminar este producto? Esta acción no se puede deshacer.')) {
+    if (!window.confirm(t('products.confirmDelete'))) {
       return
     }
 
     setProducts((current) => current.filter((product) => product.id !== productId))
-    pushToast('Producto eliminado', 'error')
+    pushToast(t('products.deleteToast'), 'error')
   }
 
   const markOutOfStock = (productId) => {
     applyMutation(
       productId,
       (product) => ({ ...product, status: 'out_of_stock', stock: 0 }),
-      'Stock marcado como agotado',
+      t('products.outOfStockHistory'),
     )
-    pushToast('Producto marcado como agotado', 'info')
+    pushToast(t('products.outOfStockToast'), 'info')
   }
 
   const importCsvProducts = (event) => {
@@ -188,7 +175,7 @@ function Products() {
         .filter(Boolean)
 
       if (lines.length < 2) {
-        pushToast('El CSV no contiene filas para importar', 'error')
+        pushToast(t('products.csvEmpty'), 'error')
         return
       }
 
@@ -229,11 +216,10 @@ function Products() {
             tax: Number(data.tax || 19),
             rating: 4.5,
             status: parsedStatus,
-            image:
-              sanitizeImageUrl(
-                data.image,
-                'https://placehold.co/600x600/eef2ff/1f2937?text=Producto+importado',
-              ),
+            image: sanitizeImageUrl(
+              data.image,
+              'https://placehold.co/600x600/eef2ff/1f2937?text=Producto+importado',
+            ),
             variants: {
               colors: [],
               sizes: [],
@@ -242,18 +228,18 @@ function Products() {
             tags: data.tags ? data.tags.split('|').map((tag) => tag.trim()).filter(Boolean) : [],
             updatedBy: 'Bryan',
             updatedAt: new Date().toISOString(),
-            history: ['Producto importado por CSV'],
+            history: [t('products.importedHistory')],
           }
         })
         .filter(Boolean)
 
       if (importedProducts.length === 0) {
-        pushToast('No se encontraron productos válidos en el CSV', 'error')
+        pushToast(t('products.csvInvalid'), 'error')
         return
       }
 
       setProducts((current) => [...importedProducts, ...current])
-      pushToast(`Se importaron ${importedProducts.length} productos`, 'success')
+      pushToast(t('products.csvImported', { count: importedProducts.length }), 'success')
     }
 
     reader.readAsText(selectedFile)
@@ -263,20 +249,16 @@ function Products() {
   return (
     <>
       <AdminLayout
-        eyebrow="Gestión profesional"
-        title="Catálogo de productos"
-        breadcrumbs={['Panel', 'Productos']}
+        eyebrow={t('products.eyebrow')}
+        title={t('products.title')}
+        breadcrumbs={[t('navigation.panel'), t('navigation.products')]}
         actions={
           <>
-            <button
-              className="btn btn-ghost"
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-            >
-              Importar CSV
+            <button className="btn btn-ghost" type="button" onClick={() => fileInputRef.current?.click()}>
+              {t('products.importCsv')}
             </button>
             <Link className="btn btn-primary" to="/productos/nuevo">
-              + Agregar producto
+              {t('products.addProduct')}
             </Link>
             <input
               ref={fileInputRef}
@@ -293,7 +275,7 @@ function Products() {
             <input
               className="catalog-input"
               type="search"
-              placeholder="Buscar por nombre, marca o SKU"
+              placeholder={t('common.searchPlaceholder')}
               value={search}
               onChange={(event) => {
                 setSearch(event.target.value)
@@ -309,10 +291,12 @@ function Products() {
                 setPage(1)
               }}
             >
-              <option value="all">Todos los estados</option>
-              <option value="draft">Borrador</option>
-              <option value="published">Publicado</option>
-              <option value="out_of_stock">Agotado</option>
+              <option value="all">{t('common.allStatuses')}</option>
+              {statusOptions.map((status) => (
+                <option key={status.value} value={status.value}>
+                  {t(status.key)}
+                </option>
+              ))}
             </select>
 
             <select
@@ -323,9 +307,10 @@ function Products() {
                 setPage(1)
               }}
             >
-              {categories.map((category) => (
+              <option value="all">{t('common.allCategories')}</option>
+              {categories.filter((category) => category !== 'all').map((category) => (
                 <option key={category} value={category}>
-                  {category === 'all' ? 'Todas las categorías' : category}
+                  {getCategoryLabel(category)}
                 </option>
               ))}
             </select>
@@ -338,25 +323,25 @@ function Products() {
                 setPage(1)
               }}
             >
-              <option value="updated_desc">Más recientes</option>
-              <option value="price_asc">Precio menor</option>
-              <option value="price_desc">Precio mayor</option>
-              <option value="name_asc">Nombre A-Z</option>
+              <option value="updated_desc">{t('products.newest')}</option>
+              <option value="price_asc">{t('products.priceLow')}</option>
+              <option value="price_desc">{t('products.priceHigh')}</option>
+              <option value="name_asc">{t('products.nameAsc')}</option>
             </select>
           </div>
 
           {isLoading ? (
-            <div className="skeleton-grid" aria-label="Cargando productos">
+            <div className="skeleton-grid" aria-label={t('common.loadingProducts')}>
               {Array.from({ length: 4 }).map((_, index) => (
                 <article key={index} className="skeleton-item" />
               ))}
             </div>
           ) : paginatedProducts.length === 0 ? (
             <section className="empty-state">
-              <h3>No hay resultados con esos filtros</h3>
-              <p>Prueba otros filtros o crea tu primer producto para empezar a vender.</p>
+              <h3>{t('products.emptyTitle')}</h3>
+              <p>{t('products.emptyDescription')}</p>
               <Link className="btn btn-primary" to="/productos/nuevo">
-                Crear producto
+                {t('products.createProduct')}
               </Link>
             </section>
           ) : (
@@ -370,15 +355,20 @@ function Products() {
                     loading="lazy"
                   />
                   <div>
-                    <p className="item-category">{product.category}</p>
+                    <p className="item-category">{getCategoryLabel(product.category)}</p>
                     <h3>{product.name}</h3>
-                    <p className="item-meta">{product.brand} · SKU: {product.sku}</p>
                     <p className="item-meta">
-                      <strong>${product.price}</strong> · Stock: {product.stock}
+                      {product.brand} · SKU: {product.sku}
                     </p>
-                    <p className={`status-pill status-${product.status}`}>{statusLabel[product.status]}</p>
+                    <p className="item-meta">
+                      <strong>{formatCurrency(product.price)}</strong> · {t('common.stock')}: {product.stock}
+                    </p>
+                    <p className={`status-pill status-${product.status}`}>{getStatusLabel(product.status)}</p>
                     <small className="history-item">
-                      Último cambio: {product.updatedBy} · {formatDate(product.updatedAt)}
+                      {t('products.lastChange', {
+                        user: product.updatedBy,
+                        date: formatDateTime(product.updatedAt),
+                      })}
                     </small>
                     <small className="history-item">{product.history?.[0]}</small>
                   </div>
@@ -387,37 +377,21 @@ function Products() {
                     <button
                       type="button"
                       className="btn btn-ghost"
-                      onClick={() => pushToast('Edición detallada en la siguiente iteración', 'info')}
+                      onClick={() => pushToast(t('products.editToast'), 'info')}
                     >
-                      Editar
+                      {t('products.edit')}
                     </button>
-                    <button
-                      type="button"
-                      className="btn btn-ghost"
-                      onClick={() => duplicateProduct(product)}
-                    >
-                      Duplicar
+                    <button type="button" className="btn btn-ghost" onClick={() => duplicateProduct(product)}>
+                      {t('products.duplicate')}
                     </button>
-                    <button
-                      type="button"
-                      className="btn btn-ghost"
-                      onClick={() => pauseProduct(product.id)}
-                    >
-                      Pausar
+                    <button type="button" className="btn btn-ghost" onClick={() => pauseProduct(product.id)}>
+                      {t('products.pause')}
                     </button>
-                    <button
-                      type="button"
-                      className="btn btn-ghost"
-                      onClick={() => markOutOfStock(product.id)}
-                    >
-                      Agotado
+                    <button type="button" className="btn btn-ghost" onClick={() => markOutOfStock(product.id)}>
+                      {t('products.outOfStock')}
                     </button>
-                    <button
-                      type="button"
-                      className="btn btn-danger"
-                      onClick={() => deleteProduct(product.id)}
-                    >
-                      Eliminar
+                    <button type="button" className="btn btn-danger" onClick={() => deleteProduct(product.id)}>
+                      {t('products.delete')}
                     </button>
                   </div>
                 </article>
@@ -425,25 +399,23 @@ function Products() {
             </div>
           )}
 
-          <footer className="pagination" aria-label="Paginación de productos">
+          <footer className="pagination" aria-label={t('navigation.products')}>
             <button
               type="button"
               className="btn btn-ghost"
               disabled={currentPage === 1}
               onClick={() => setPage((current) => Math.max(1, current - 1))}
             >
-              Anterior
+              {t('common.previous')}
             </button>
-            <span>
-              Página {currentPage} de {totalPages}
-            </span>
+            <span>{t('products.pageLabel', { current: currentPage, total: totalPages })}</span>
             <button
               type="button"
               className="btn btn-ghost"
               disabled={currentPage === totalPages}
               onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
             >
-              Siguiente
+              {t('common.next')}
             </button>
           </footer>
         </section>

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import AdminLayout from '../components/admin/AdminLayout'
 import ToastStack from '../components/ui/ToastStack'
+import { usePreferences } from '../context/PreferencesContext'
 import { DEFAULT_IMAGE_PLACEHOLDER, sanitizeImageUrl } from '../utils/sanitizeImageUrl'
 
 const DRAFT_STORAGE_KEY = 'newProductDraftV1'
@@ -22,13 +23,6 @@ const initialForm = {
   tags: '',
 }
 
-const steps = [
-  'Información básica',
-  'Precio y stock',
-  'Imágenes y variantes',
-  'Resumen y publicación',
-]
-
 const brandSuggestions = ['NovaTech', 'SonicOne', 'StreetLab', 'CasaLink', 'NomadGo']
 const tagSuggestions = ['audio', 'wearable', 'smart', 'moda', 'hogar', 'fitness', 'viaje']
 
@@ -43,6 +37,17 @@ const isNonNegativeNumber = (value) => Number(value) >= 0
 
 function NewProduct() {
   const navigate = useNavigate()
+  const { categoryOptions, formatCurrency, getCategoryLabel, locale, t } = usePreferences()
+
+  const steps = useMemo(
+    () => [
+      t('newProduct.basicInfo'),
+      t('newProduct.pricing'),
+      t('newProduct.media'),
+      t('newProduct.summary'),
+    ],
+    [t],
+  )
 
   const [step, setStep] = useState(1)
   const [form, setForm] = useState(() => {
@@ -70,62 +75,65 @@ function NewProduct() {
     setToasts((current) => current.filter((toast) => toast.id !== toastId))
   }, [])
 
-  const validateForm = useCallback((candidate) => {
-    const validationErrors = {}
+  const validateForm = useCallback(
+    (candidate) => {
+      const validationErrors = {}
 
-    if (!candidate.name.trim()) {
-      validationErrors.name = 'El nombre es obligatorio.'
-    }
-    if (!candidate.brand.trim()) {
-      validationErrors.brand = 'La marca es obligatoria.'
-    }
-    if (!candidate.sku.trim()) {
-      validationErrors.sku = 'El SKU es obligatorio.'
-    }
-    if (!candidate.category) {
-      validationErrors.category = 'Selecciona una categoría.'
-    }
-
-    if (!isPositiveNumber(candidate.price)) {
-      validationErrors.price = 'El precio debe ser mayor que 0.'
-    }
-    if (!isNonNegativeNumber(candidate.stock)) {
-      validationErrors.stock = 'El stock no puede ser negativo.'
-    }
-
-    const discount = Number(candidate.discount)
-    if (Number.isNaN(discount) || discount < 0 || discount > 90) {
-      validationErrors.discount = 'El descuento debe estar entre 0% y 90%.'
-    }
-
-    const tax = Number(candidate.tax)
-    if (Number.isNaN(tax) || tax < 0 || tax > 100) {
-      validationErrors.tax = 'El impuesto debe estar entre 0% y 100%.'
-    }
-
-    if (!candidate.image.trim()) {
-      validationErrors.image = 'Agrega una URL de imagen principal.'
-    }
-
-    if (candidate.category === 'Moda') {
-      if (parseList(candidate.sizes).length === 0) {
-        validationErrors.sizes = 'Para moda, define al menos una talla.'
+      if (!candidate.name.trim()) {
+        validationErrors.name = t('newProduct.validation.requiredName')
       }
-      if (parseList(candidate.colors).length === 0) {
-        validationErrors.colors = 'Para moda, define al menos un color.'
+      if (!candidate.brand.trim()) {
+        validationErrors.brand = t('newProduct.validation.requiredBrand')
       }
-    }
+      if (!candidate.sku.trim()) {
+        validationErrors.sku = t('newProduct.validation.requiredSku')
+      }
+      if (!candidate.category) {
+        validationErrors.category = t('newProduct.validation.requiredCategory')
+      }
 
-    if (candidate.category === 'Electrónica' && !isPositiveNumber(candidate.warrantyMonths)) {
-      validationErrors.warrantyMonths = 'Define meses de garantía mayores a 0.'
-    }
+      if (!isPositiveNumber(candidate.price)) {
+        validationErrors.price = t('newProduct.validation.positivePrice')
+      }
+      if (!isNonNegativeNumber(candidate.stock)) {
+        validationErrors.stock = t('newProduct.validation.nonNegativeStock')
+      }
 
-    if (parseList(candidate.tags).length === 0) {
-      validationErrors.tags = 'Añade al menos una etiqueta.'
-    }
+      const discount = Number(candidate.discount)
+      if (Number.isNaN(discount) || discount < 0 || discount > 90) {
+        validationErrors.discount = t('newProduct.validation.discountRange')
+      }
 
-    return validationErrors
-  }, [])
+      const tax = Number(candidate.tax)
+      if (Number.isNaN(tax) || tax < 0 || tax > 100) {
+        validationErrors.tax = t('newProduct.validation.taxRange')
+      }
+
+      if (!candidate.image.trim()) {
+        validationErrors.image = t('newProduct.validation.requiredImage')
+      }
+
+      if (candidate.category === 'Moda') {
+        if (parseList(candidate.sizes).length === 0) {
+          validationErrors.sizes = t('newProduct.validation.requiredSizes')
+        }
+        if (parseList(candidate.colors).length === 0) {
+          validationErrors.colors = t('newProduct.validation.requiredColors')
+        }
+      }
+
+      if (candidate.category === 'Electrónica' && !isPositiveNumber(candidate.warrantyMonths)) {
+        validationErrors.warrantyMonths = t('newProduct.validation.warrantyRange')
+      }
+
+      if (parseList(candidate.tags).length === 0) {
+        validationErrors.tags = t('newProduct.validation.requiredTags')
+      }
+
+      return validationErrors
+    },
+    [t],
+  )
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -165,7 +173,7 @@ function NewProduct() {
 
     const hasStepErrors = stepFields[step].some((field) => nextErrors[field])
     if (hasStepErrors) {
-      pushToast('Corrige los campos marcados para continuar', 'error')
+      pushToast(t('newProduct.stepErrorToast'), 'error')
       return
     }
 
@@ -179,7 +187,7 @@ function NewProduct() {
   const saveDraft = () => {
     localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(form))
     setLastSaved(new Date())
-    pushToast('Borrador guardado manualmente', 'success')
+    pushToast(t('newProduct.manualSaveToast'), 'success')
   }
 
   const publishProduct = (event) => {
@@ -189,7 +197,7 @@ function NewProduct() {
     setErrors(nextErrors)
 
     if (Object.keys(nextErrors).length > 0) {
-      pushToast('Completa todos los campos obligatorios antes de publicar', 'error')
+      pushToast(t('newProduct.submitErrorToast'), 'error')
       return
     }
 
@@ -214,7 +222,7 @@ function NewProduct() {
       tags: parseList(form.tags),
       updatedBy: 'Bryan',
       updatedAt: new Date().toISOString(),
-      history: ['Producto creado y publicado por Bryan'],
+      history: [t('newProduct.createdHistory')],
     }
 
     localStorage.removeItem(DRAFT_STORAGE_KEY)
@@ -224,16 +232,16 @@ function NewProduct() {
   return (
     <>
       <AdminLayout
-        eyebrow="Alta guiada"
-        title="Agregar nuevo producto"
-        breadcrumbs={['Panel', 'Productos', 'Nuevo producto']}
+        eyebrow={t('newProduct.eyebrow')}
+        title={t('newProduct.title')}
+        breadcrumbs={[t('newProduct.breadcrumbs.panel'), t('newProduct.breadcrumbs.products'), t('newProduct.breadcrumbs.newProduct')]}
         actions={
           <>
             <button className="btn btn-ghost" type="button" onClick={saveDraft}>
-              Guardar borrador
+              {t('newProduct.saveDraft')}
             </button>
             <Link className="btn btn-ghost" to="/productos">
-              Volver al catálogo
+              {t('newProduct.backToCatalog')}
             </Link>
           </>
         }
@@ -241,12 +249,12 @@ function NewProduct() {
         <section className="wizard-card">
           <header className="wizard-header">
             <div>
-              <h3>
-                Paso {step} de {steps.length}: {steps[step - 1]}
-              </h3>
+              <h3>{t('newProduct.stepLabel', { step, total: steps.length, title: steps[step - 1] })}</h3>
               <p>
-                Completa el flujo para publicar con calidad de marketplace.
-                {lastSaved ? ` Borrador guardado: ${lastSaved.toLocaleTimeString('es-CO')}` : ''}
+                {t('newProduct.marketplaceQuality')}
+                {lastSaved
+                  ? ` ${t('newProduct.draftSavedAt', { time: lastSaved.toLocaleTimeString(locale) })}`
+                  : ''}
               </p>
             </div>
             <strong>{Math.round(progress)}%</strong>
@@ -260,29 +268,36 @@ function NewProduct() {
             {step === 1 && (
               <section className="wizard-fields">
                 <label>
-                  Nombre del producto
-                  <input name="name" value={form.name} onChange={onFieldChange} placeholder="Ej: Smartwatch Pro" />
+                  {t('newProduct.productName')}
+                  <input
+                    name="name"
+                    value={form.name}
+                    onChange={onFieldChange}
+                    placeholder={t('newProduct.productNamePlaceholder')}
+                  />
                   {errors.name ? <small className="field-error">{errors.name}</small> : null}
                 </label>
 
                 <label>
-                  Categoría
+                  {t('newProduct.category')}
                   <select name="category" value={form.category} onChange={onFieldChange}>
-                    <option value="Electrónica">Electrónica</option>
-                    <option value="Moda">Moda</option>
-                    <option value="Hogar">Hogar</option>
+                    {categoryOptions.map((category) => (
+                      <option key={category.value} value={category.value}>
+                        {t(category.key)}
+                      </option>
+                    ))}
                   </select>
                   {errors.category ? <small className="field-error">{errors.category}</small> : null}
                 </label>
 
                 <label>
-                  Marca
+                  {t('newProduct.brand')}
                   <input
                     name="brand"
                     value={form.brand}
                     onChange={onFieldChange}
                     list="brand-suggestions"
-                    placeholder="Ej: NovaTech"
+                    placeholder={t('newProduct.brandPlaceholder')}
                   />
                   <datalist id="brand-suggestions">
                     {brandSuggestions.map((brand) => (
@@ -293,8 +308,13 @@ function NewProduct() {
                 </label>
 
                 <label>
-                  SKU
-                  <input name="sku" value={form.sku} onChange={onFieldChange} placeholder="Ej: NVT-SWP-01" />
+                  {t('newProduct.sku')}
+                  <input
+                    name="sku"
+                    value={form.sku}
+                    onChange={onFieldChange}
+                    placeholder={t('newProduct.skuPlaceholder')}
+                  />
                   {errors.sku ? <small className="field-error">{errors.sku}</small> : null}
                 </label>
               </section>
@@ -303,25 +323,25 @@ function NewProduct() {
             {step === 2 && (
               <section className="wizard-fields">
                 <label>
-                  Precio
+                  {t('newProduct.price')}
                   <input name="price" type="number" min="0" value={form.price} onChange={onFieldChange} />
                   {errors.price ? <small className="field-error">{errors.price}</small> : null}
                 </label>
 
                 <label>
-                  Stock
+                  {t('newProduct.stock')}
                   <input name="stock" type="number" min="0" value={form.stock} onChange={onFieldChange} />
                   {errors.stock ? <small className="field-error">{errors.stock}</small> : null}
                 </label>
 
                 <label>
-                  Descuento (%)
+                  {t('newProduct.discount')}
                   <input name="discount" type="number" min="0" max="90" value={form.discount} onChange={onFieldChange} />
                   {errors.discount ? <small className="field-error">{errors.discount}</small> : null}
                 </label>
 
                 <label>
-                  Impuesto (%)
+                  {t('newProduct.tax')}
                   <input name="tax" type="number" min="0" max="100" value={form.tax} onChange={onFieldChange} />
                   {errors.tax ? <small className="field-error">{errors.tax}</small> : null}
                 </label>
@@ -331,13 +351,13 @@ function NewProduct() {
             {step === 3 && (
               <section className="wizard-fields">
                 <label>
-                  URL imagen principal
+                  {t('newProduct.imageUrl')}
                   <input
                     name="image"
                     type="url"
                     value={form.image}
                     onChange={onFieldChange}
-                    placeholder="https://..."
+                    placeholder={t('newProduct.imagePlaceholder')}
                   />
                   {errors.image ? <small className="field-error">{errors.image}</small> : null}
                 </label>
@@ -345,19 +365,29 @@ function NewProduct() {
                 {form.category === 'Moda' ? (
                   <>
                     <label>
-                      Tallas (separadas por coma)
-                      <input name="sizes" value={form.sizes} onChange={onFieldChange} placeholder="S, M, L" />
+                      {t('newProduct.sizes')}
+                      <input
+                        name="sizes"
+                        value={form.sizes}
+                        onChange={onFieldChange}
+                        placeholder={t('newProduct.sizesPlaceholder')}
+                      />
                       {errors.sizes ? <small className="field-error">{errors.sizes}</small> : null}
                     </label>
                     <label>
-                      Colores (separados por coma)
-                      <input name="colors" value={form.colors} onChange={onFieldChange} placeholder="Negro, Azul" />
+                      {t('newProduct.colors')}
+                      <input
+                        name="colors"
+                        value={form.colors}
+                        onChange={onFieldChange}
+                        placeholder={t('newProduct.colorsPlaceholder')}
+                      />
                       {errors.colors ? <small className="field-error">{errors.colors}</small> : null}
                     </label>
                   </>
                 ) : (
                   <label>
-                    Garantía en meses
+                    {t('newProduct.warrantyMonths')}
                     <input
                       name="warrantyMonths"
                       type="number"
@@ -365,20 +395,18 @@ function NewProduct() {
                       value={form.warrantyMonths}
                       onChange={onFieldChange}
                     />
-                    {errors.warrantyMonths ? (
-                      <small className="field-error">{errors.warrantyMonths}</small>
-                    ) : null}
+                    {errors.warrantyMonths ? <small className="field-error">{errors.warrantyMonths}</small> : null}
                   </label>
                 )}
 
                 <label>
-                  Etiquetas (separadas por coma)
+                  {t('newProduct.tags')}
                   <input
                     name="tags"
                     value={form.tags}
                     onChange={onFieldChange}
                     list="tag-suggestions"
-                    placeholder="smart, audio, premium"
+                    placeholder={t('newProduct.tagsPlaceholder')}
                   />
                   <datalist id="tag-suggestions">
                     {tagSuggestions.map((tag) => (
@@ -393,61 +421,63 @@ function NewProduct() {
             {step === 4 && (
               <section className="wizard-summary">
                 <article className="summary-card">
-                  <h4>Resumen final</h4>
+                  <h4>{t('newProduct.summaryTitle')}</h4>
                   <ul>
                     <li>
-                      <strong>Nombre:</strong> {form.name}
+                      <strong>{t('newProduct.productName')}:</strong> {form.name}
                     </li>
                     <li>
-                      <strong>Categoría:</strong> {form.category}
+                      <strong>{t('newProduct.category')}:</strong> {getCategoryLabel(form.category)}
                     </li>
                     <li>
-                      <strong>Marca:</strong> {form.brand}
+                      <strong>{t('newProduct.brand')}:</strong> {form.brand}
                     </li>
                     <li>
-                      <strong>SKU:</strong> {form.sku}
+                      <strong>{t('newProduct.sku')}:</strong> {form.sku}
                     </li>
                     <li>
-                      <strong>Precio:</strong> ${previewPrice}
+                      <strong>{t('newProduct.price')}:</strong> {formatCurrency(previewPrice)}
                     </li>
                     <li>
-                      <strong>Stock:</strong> {form.stock}
+                      <strong>{t('newProduct.stock')}:</strong> {form.stock}
                     </li>
                     <li>
-                      <strong>Tags:</strong> {parseList(form.tags).join(', ') || '-'}
+                      <strong>{t('newProduct.tags')}:</strong> {parseList(form.tags).join(', ') || '-'}
                     </li>
                   </ul>
                 </article>
 
                 <article className="preview-card">
-                  <p className="item-category">Vista previa</p>
+                  <p className="item-category">{t('newProduct.previewTitle')}</p>
                   <img
                     src={sanitizeImageUrl(
                       form.image,
                       'https://placehold.co/600x400/eef2ff/1f2937?text=Imagen+producto',
                     )}
-                    alt="Vista previa del producto"
+                    alt={t('newProduct.previewAlt')}
                     className="catalog-image"
                   />
-                  <h4>{form.name || 'Nombre del producto'}</h4>
-                  <p className="item-meta">{form.brand || 'Marca'} · {form.category}</p>
-                  <strong>${previewPrice}</strong>
+                  <h4>{form.name || t('newProduct.productName')}</h4>
+                  <p className="item-meta">
+                    {form.brand || t('newProduct.brand')} · {getCategoryLabel(form.category)}
+                  </p>
+                  <strong>{formatCurrency(previewPrice)}</strong>
                 </article>
               </section>
             )}
 
             <footer className="wizard-footer">
               <button type="button" className="btn btn-ghost" disabled={step === 1} onClick={goPreviousStep}>
-                Anterior
+                {t('common.previous')}
               </button>
 
               {step < steps.length ? (
                 <button type="button" className="btn btn-primary" onClick={goNextStep}>
-                  Continuar
+                  {t('newProduct.continue')}
                 </button>
               ) : (
                 <button type="submit" className="btn btn-primary">
-                  Publicar producto
+                  {t('newProduct.publish')}
                 </button>
               )}
             </footer>

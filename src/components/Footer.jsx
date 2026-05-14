@@ -1,10 +1,11 @@
+import { usePreferences } from '../context/PreferencesContext'
+
 function Footer() {
+  const { t } = usePreferences()
+
   return (
     <footer className="site-footer">
-      <small>
-        © {new Date().getFullYear()} Mi Tienda · Inspirado en interfaces tipo marketplace/app
-        store.
-      </small>
+      <small>{t('footer.text', { year: new Date().getFullYear() })}</small>
     </footer>
   )
 }
