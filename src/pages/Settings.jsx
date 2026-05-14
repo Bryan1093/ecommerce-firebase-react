@@ -3,6 +3,8 @@ import { usePreferences } from '../context/PreferencesContext'
 
 function Settings() {
   const { language, setLanguage, languageOptions, theme, setTheme, themeOptions, t } = usePreferences()
+  const fallbackLanguageKey =
+    language === 'en' ? 'languages.english' : language === 'pt' ? 'languages.portuguese' : 'languages.spanish'
 
   return (
     <AdminLayout
@@ -59,11 +61,11 @@ function Settings() {
           <dl className="settings-summary-list">
             <div>
               <dt>{t('settings.previewTheme')}</dt>
-              <dd>{t(themeOptions.find((option) => option.value === theme)?.key || 'themes.light')}</dd>
+              <dd>{t(themeOptions.find((option) => option.value === theme)?.key ?? `themes.${theme}`)}</dd>
             </div>
             <div>
               <dt>{t('settings.previewLanguage')}</dt>
-              <dd>{t(languageOptions.find((option) => option.value === language)?.key || 'languages.spanish')}</dd>
+              <dd>{t(languageOptions.find((option) => option.value === language)?.key ?? fallbackLanguageKey)}</dd>
             </div>
           </dl>
           <p className="settings-saved-copy">{t('settings.savedMessage')}</p>

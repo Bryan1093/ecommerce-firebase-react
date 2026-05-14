@@ -29,7 +29,7 @@ function AdminLayout({ eyebrow, title, breadcrumbs, actions, children }) {
       <div className="admin-content">
         <div className="admin-breadcrumbs" aria-label="Breadcrumbs">
           {breadcrumbs.map((crumb, index) => (
-            <span key={`${crumb}-${index}`}>
+            <span key={index}>
               {crumb}
               {index < breadcrumbs.length - 1 ? ' / ' : ''}
             </span>
