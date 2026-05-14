@@ -15,6 +15,7 @@ function App() {
             path="/productos"
             element={
               <section className="page-content">
+                <p className="eyebrow">Catálogo</p>
                 <h2>Productos</h2>
                 <p>Próximamente podrás explorar el catálogo completo.</p>
               </section>
@@ -24,6 +25,7 @@ function App() {
             path="/carrito"
             element={
               <section className="page-content">
+                <p className="eyebrow">Mis compras</p>
                 <h2>Carrito</h2>
                 <p>Tu carrito está vacío por ahora.</p>
               </section>
