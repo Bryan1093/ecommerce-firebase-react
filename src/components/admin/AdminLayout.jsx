@@ -1,35 +1,37 @@
 import { NavLink } from 'react-router-dom'
-import { usePreferences } from '../../context/PreferencesContext'
+import { useAuth } from '../../context/AuthContext'
+
+const adminLinks = [
+  { to: '/admin', label: 'Dashboard', end: true },
+  { to: '/admin/productos', label: 'Productos' },
+  { to: '/admin/pedidos', label: 'Pedidos' },
+  { to: '/admin/clientes', label: 'Clientes' },
+  { to: '/admin/marketing', label: 'Marketing' },
+  { to: '/configuracion', label: 'Preferencias' },
+]
 
 function AdminLayout({ eyebrow, title, breadcrumbs, actions, children }) {
-  const { t } = usePreferences()
-  const linkClass = ({ isActive }) =>
-    isActive ? 'admin-nav-link admin-nav-link-active' : 'admin-nav-link'
+  const { user } = useAuth()
+  const linkClass = ({ isActive }) => (isActive ? 'admin-nav-link admin-nav-link-active' : 'admin-nav-link')
 
   return (
     <section className="admin-shell">
-      <aside className="admin-sidebar" aria-label={t('navigation.panel')}>
-        <h2>{t('navigation.panel')}</h2>
+      <aside className="admin-sidebar" aria-label="Panel administrativo">
+        <h2>Backoffice</h2>
+        <p className="item-category">{user?.email}</p>
         <nav>
-          <NavLink to="/productos" className={linkClass}>
-            {t('navigation.products')}
-          </NavLink>
-          <NavLink to="/productos/nuevo" className={linkClass}>
-            {t('navigation.addProduct')}
-          </NavLink>
-          <NavLink to="/configuracion" className={linkClass}>
-            {t('navigation.settings')}
-          </NavLink>
-          <NavLink to="/" className={linkClass}>
-            {t('navigation.viewStore')}
-          </NavLink>
+          {adminLinks.map((link) => (
+            <NavLink key={link.to} to={link.to} end={link.end} className={linkClass}>
+              {link.label}
+            </NavLink>
+          ))}
         </nav>
       </aside>
 
       <div className="admin-content">
         <div className="admin-breadcrumbs" aria-label="Breadcrumbs">
           {breadcrumbs.map((crumb, index) => (
-            <span key={index}>
+            <span key={`${crumb}-${index}`}>
               {crumb}
               {index < breadcrumbs.length - 1 ? ' / ' : ''}
             </span>
