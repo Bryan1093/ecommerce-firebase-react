@@ -27,15 +27,18 @@ function Home() {
     <section className="home-page">
       <article className="hero-card">
         <div>
-          <p className="eyebrow">Lo más descargado esta semana</p>
-          <h2>Descubre ofertas como en una app store</h2>
+          <p className="eyebrow">Lo más vendido esta semana</p>
+          <h2>Vende con una experiencia tipo marketplace</h2>
           <p>
-            Explora productos populares, categorías destacadas y recomendaciones personalizadas
-            en una interfaz limpia y rápida.
+            Gestiona catálogo, crea productos paso a paso y publica con una interfaz intuitiva,
+            rápida y preparada para crecer.
           </p>
           <div className="hero-actions">
             <Link className="btn btn-primary" to="/productos">
-              Ver catálogo
+              Ir al panel
+            </Link>
+            <Link className="btn btn-ghost" to="/productos/nuevo">
+              Agregar producto
             </Link>
             <Link className="btn btn-ghost" to="/carrito">
               Ir al carrito
@@ -47,13 +50,13 @@ function Home() {
 
       <article className="section-card">
         <header className="section-header">
-          <h3>Categorías populares</h3>
+          <h3>Herramientas del panel</h3>
         </header>
-        <ul className="chip-list" aria-label="Categorías destacadas">
-          <li className="chip">🔥 Tendencias</li>
-          <li className="chip">🎧 Audio</li>
-          <li className="chip">⌚ Wearables</li>
-          <li className="chip">🏠 Hogar inteligente</li>
+        <ul className="chip-list" aria-label="Herramientas destacadas">
+          <li className="chip">🧭 Wizard guiado</li>
+          <li className="chip">⚡ Validación en vivo</li>
+          <li className="chip">📦 Estados de inventario</li>
+          <li className="chip">📊 Filtros y paginación</li>
         </ul>
       </article>
 
