@@ -38,6 +38,9 @@ const isNonNegativeNumber = (value) => Number(value) >= 0
 function NewProduct() {
   const navigate = useNavigate()
   const { categoryOptions, formatCurrency, getCategoryLabel, locale, t } = usePreferences()
+  const fashionCategory = categoryOptions.find((category) => category.key === 'categories.fashion')?.value ?? 'Moda'
+  const electronicsCategory =
+    categoryOptions.find((category) => category.key === 'categories.electronics')?.value ?? 'Electrónica'
 
   const steps = useMemo(
     () => [
@@ -113,7 +116,7 @@ function NewProduct() {
         validationErrors.image = t('newProduct.validation.requiredImage')
       }
 
-      if (candidate.category === 'Moda') {
+      if (candidate.category === fashionCategory) {
         if (parseList(candidate.sizes).length === 0) {
           validationErrors.sizes = t('newProduct.validation.requiredSizes')
         }
@@ -122,7 +125,7 @@ function NewProduct() {
         }
       }
 
-      if (candidate.category === 'Electrónica' && !isPositiveNumber(candidate.warrantyMonths)) {
+      if (candidate.category === electronicsCategory && !isPositiveNumber(candidate.warrantyMonths)) {
         validationErrors.warrantyMonths = t('newProduct.validation.warrantyRange')
       }
 
@@ -132,7 +135,7 @@ function NewProduct() {
 
       return validationErrors
     },
-    [t],
+    [electronicsCategory, fashionCategory, t],
   )
 
   useEffect(() => {
@@ -362,7 +365,7 @@ function NewProduct() {
                   {errors.image ? <small className="field-error">{errors.image}</small> : null}
                 </label>
 
-                {form.category === 'Moda' ? (
+                {form.category === fashionCategory ? (
                   <>
                     <label>
                       {t('newProduct.sizes')}
